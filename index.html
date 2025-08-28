@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🏁 Гонки машин</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; }
+        .car { font-family: monospace; font-size: 16px; margin: 10px; }
+        .red { color: red; }
+        .blue { color: blue; }
+        .green { color: green; }
+        button { font-size: 16px; padding: 10px 20px; margin: 10px; }
+        .start { background: green; color: white; }
+        .reset { background: red; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🏁 ГОНКИ МАШИН 🏁</h1>
+    
+    <button class="start" onclick="startRace()">СТАРТ</button>
+    <button class="reset" onclick="resetRace()">СБРОС</button>
+    
+    <div id="status">Готов к гонкам</div>
+    <br>
+    
+    <div id="cars">
+        <div class="car red" id="car0">Машина № 1: Ждет старта</div>
+        <div class="car blue" id="car1">Машина № 2: Ждет старта</div>
+        <div class="car green" id="car2">Машина № 3: Ждет старта</div>
+    </div>
+    
+    <script>
+        async function startRace() {
+            const response = await fetch('/start');
+            const result = await response.json();
+            document.getElementById('status').innerText = result.message;
+            
+            // Запускаем обновление позиций
+            updateRace();
+        }
+        
+        async function resetRace() {
+            const response = await fetch('/reset');
+            const result = await response.json();
+            document.getElementById('status').innerText = result.message;
+            
+            // Сбрасываем отображение
+            for (let i = 0; i < 3; i++) {
+                const carNames = ["Машина № 1", "Машина № 2", "Машина № 3"];
+                document.getElementById(`car${i}`).innerText = `${carNames[i]}: Ждет старта`;
+            }
+        }
+        
+        async function updateRace() {
+            const response = await fetch('/status');
+            const data = await response.json();
+            
+            // Обновляем отображение машин
+            const carNames = ["Машина № 1", "Машина № 2", "Машина № 3"];
+            for (let i = 0; i < 3; i++) {
+                const position = data.positions[i];
+                const distance = data.distance;
+                
+                let progress = '🚗' + '█'.repeat(position) + '░'.repeat(distance - position);
+                
+                if (position >= distance) {
+                    progress = '🏆 ФИНИШ!';
+                }
+                
+                document.getElementById(`car${i}`).innerText = `${carNames[i]}: ${progress}`;
+            }
+            
+            // Обновляем статус
+            if (data.winner) {
+                document.getElementById('status').innerText = `🏆 Победитель: ${data.winner}!`;
+            } else if (data.racing) {
+                document.getElementById('status').innerText = '🏁 Гонки идут!';
+                // Продолжаем обновление
+                setTimeout(updateRace, 500);
+            }
+        }
+    </script>
+</body>
+</html>
